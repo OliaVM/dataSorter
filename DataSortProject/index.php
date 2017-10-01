@@ -214,7 +214,3 @@ class FileDataSortController {
 
 $objSort = new FileDataSortController($inputFileName, $outputFileName, $dataType, $wayOfSort);
 $objSort->fileDataSortAction();
-//php index.php "str.txt" "str_result_increase.txt" "string" "increase"
-//php index.php str.txt str_result_decrease.txt string decrease
-//php index.php "int.txt" "int_result_increase.txt" "integer" "increase"
-//php index.php int.txt int_result_decrease.txt integer decrease
