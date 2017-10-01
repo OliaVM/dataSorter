@@ -1,0 +1,11 @@
+1. Put the test project in local server
+2. Put the file to sort in the directory "filesForSort" (file should be format "txt" and name of file must contain latin characters and numbers)
+2. Open console and go to the directory with the project
+3. Enter code in format: php index.php nameOfInputFile nameOfOutputFile dataType wayOfSort
+
+Example:
+php index.php str.txt str_result_increase.txt string increase
+php index.php str.txt str_result_decrease.txt string decrease
+php index.php int.txt int_result_increase.txt integer increase
+php index.php int.txt int_result_decrease.txt integer decrease
+
