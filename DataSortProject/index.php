@@ -1,11 +1,4 @@
 ﻿<?php
-class ExceptionOfArrInputName extends Exception { }
-class ExceptionOfArrOutputName extends Exception { }
-class ExceptionOfDataType extends Exception { }
-class ExceptionOfWayOfSort extends Exception { }
-class ExceptionOfFileNameExist extends Exception { }
-class ExceptionOfCountElem extends Exception { }
-
 $inputFileName = $argv[1];
 $outputFileName = $argv[2];
 $dataType = $argv[3];
@@ -17,172 +10,99 @@ class FileDataSortModel {
     public $dataType;
     public $inputFileName;
     public $countElem = 0;
-    public function __construct($inputFileName, $outputFileName, $dataType, $wayOfSort){
+    public $comparator;
+
+    public function __construct($inputFileName, $outputFileName, $dataType, $wayOfSort){ //, $comparator
         $this->inputFileName = $inputFileName;
         $this->outputFileName = $outputFileName;
         $this->dataType = $dataType;
         $this->wayOfSort = $wayOfSort;
     }
 
-    public function ifAllDataInput() {
+    public function ifAllDataInputAndTrue($argv, $argc) {
         try {
-            if (isset($argv) || $argc = 5) {
-                $this->ifAllDataTrue();      
-            } 
-            else {
+            if (!isset($argv) || $argc !== 5) {
                 throw new Exception ("Введите имя входного файла, имя выходного файла, режим сортировки, а также тип сортируемых данных");
             }
+            $arrInputName = explode(".", $this->inputFileName);
+            if ((preg_match("/[a-z0-9]{3,20}/i", $arrInputName[0]) == 0) || ($arrInputName[1] !== "txt")) {
+                throw new Exception("Имя файла должно содержать только буквы латинского алфавита и цифры. Формат файла должен быть txt. Input-файл должен находиться в директории filesForSort");
+            }
+            $arrOutputName = explode(".", $this->outputFileName);            
+            if ((preg_match("/[a-z0-9]{3,20}/i", $arrOutputName[0]) == 0) || ($arrOutputName[1] !== "txt")) {
+                throw new Exception("Имя итогового файла должно содержать только буквы латинского алфавита и цифры. Формат файла должен быть txt");
+            }
+            if ($this->dataType !== "integer" && $this->dataType !== "string") {
+                throw new Exception("Тип данных может быть integer или string");
+            }
+            if ($this->wayOfSort !== "increase" && $this->wayOfSort !== "decrease") {
+                throw new Exception("Режим сортировки может быть increase или decrease");
+            }
+
+            $uploaddir = __DIR__ . "/filesForSort/";
+            $ourFile = $uploaddir.$this->inputFileName;
+            if (!file_exists($ourFile)) {
+                throw new Exception("Файл с таким именем не существует!");
+            }
+
+            $arrForSort = array();
+            if($handle = fopen($ourFile,"r+")){ 
+                  while (!feof($handle)){ 
+                    if ($this->dataType == "integer") { //
+                        $arrForSort[] = (int)fgets($handle, 4096); // Convert string to INTEGER
+                    }
+                    else {
+                        $arrForSort[] = fgets($handle, 4096);
+                    }
+                    $this->countElem = $this->countElem + 1;
+                  } 
+                  fclose($handle); 
+            } 
+            
+            if ($this->countElem > 100) {
+                throw new Exception("Число сортируемых элементов не должно превышать 100!");
+            }
+            
+            $comparator = $this->wayOfSort;
+            $dataType = $this->dataType;
+            $resultArray = $this->insertionSortWithParam($arrForSort, $comparator, $dataType);
+
+            $file = __DIR__ . "/resultFiles/".$this->outputFileName;
+            if ($dataType == "string") {
+                file_put_contents($file, implode("", $resultArray)); // 
+            }
+            else {
+                file_put_contents($file, implode("\n", $resultArray));
+            } 
         }
         catch (Exception $ex) {
             return $ex->getMessage();
         }
     }
 
-    public function ifAllDataTrue() { 
-        try {
-            $arrInputName = explode(".", $this->inputFileName);
-            if (preg_match("/[a-z0-9]{3,20}/i", $arrInputName[0]) && $arrInputName[1] == "txt") {
-               try {
-                    $arrOutputName = explode(".", $this->outputFileName);
-                    if (preg_match("/[a-z0-9]{3,20}/i", $arrOutputName[0]) && $arrOutputName[1] == "txt") {
-                        try {
-                                if ($this->dataType == "integer" || $this->dataType == "string") {
-                                    try {
-                                            if ($this->wayOfSort == "increase" || $this->wayOfSort == "decrease") {
-                                                $this->fileDataInsertionSort();
-                                            } else {
-                                            throw new ExceptionOfWayOfSort("Режим сортировки может быть increase или decrease");
-                                        }
-                                    }
-                                    catch (ExceptionOfWayOfSort $ex4) {
-                                       throw $ex4;
-                                    }
 
-                                } else {
-                                    throw new ExceptionOfDataType("Тип данных может быть integer или string");
-                                }
-                            }
-                            catch (ExсeptionOfDataType $ex3) {
-                               throw $ex3;
-                            }
-                    } else {
-                        throw new ExceptionOfArrOutputName("Имя итогового файла должно содержать только буквы латинского алфавита и цифры. Формат файла должен быть txt");
-                    }
+    public function insertionSortWithParam($arrForSort, $comparator, $dataType) {
+        if ($comparator == "increase") {
+            for($i = 1; $i < count($arrForSort); $i++) {
+                $rightValue = $arrForSort[$i]; 
+                $leftValue = $i - 1; 
+                while($leftValue >= 0 && $arrForSort[$leftValue] > $rightValue) {
+                    $arrForSort[$leftValue+1] = $arrForSort[$leftValue];
+                    $leftValue--;
                 }
-                catch (ExceptionOfArrOutputName $ex2) {
-                   throw $ex2;
+                $arrForSort[++$leftValue] = $rightValue;
+            }
+        }
+        else { //if ($comparator == "decrease")
+            for($i = 1; $i < count($arrForSort); $i++) {
+                $rightValue = $arrForSort[$i]; 
+                $leftValue = $i - 1; 
+                while($leftValue >= 0 && $arrForSort[$leftValue] <= $rightValue) {
+                    $arrForSort[$leftValue+1] = $arrForSort[$leftValue];
+                    $leftValue--;
                 }
-            } else {
-                throw new ExceptionOfArrInputName("Имя файла должно содержать только буквы латинского алфавита и цифры. Формат файла должен быть txt. Input-файл должен находиться в директории filesForSort");
+                $arrForSort[++$leftValue] = $rightValue;
             }
-        }
-        catch (ExceptionOfArrInputName $ex1) {
-            throw $ex1;
-        }
-    }    
-
-
-    public function fileDataInsertionSort() {
-       	$uploaddir = __DIR__ . "/filesForSort/";
-        $ourFile = $uploaddir.$this->inputFileName;
-        try {
-            if (file_exists($ourFile)) {
-            $arrForSort = array();
-           
-                if($handle = fopen($ourFile,"r+")){ 
-                      while (!feof($handle)){ 
-                         $arrForSort[] = fgets($handle, 4096);
-                         $this->countElem = $this->countElem + 1;
-                      } 
-                      fclose($handle); 
-                } 
-                try {
-                    if ($this->countElem <= 100) {
-                        if ($this->wayOfSort == "increase" && $this->dataType == "integer") {//a
-                            $resultArray = $this->increaseInsertionIntSort($arrForSort);
-                        }
-                        else if ($this->wayOfSort == "decrease" && $this->dataType == "integer") {
-                            $resultArray = $this->decreaseInsertionIntSort($arrForSort);
-                        }
-                        else if ($this->wayOfSort == "increase" && $this->dataType == "string") {
-                            $resultArray = $this->increaseInsertionStrSort($arrForSort);
-                        }
-                        else {
-                            $resultArray = $this->decreaseInsertionStrSort($arrForSort);
-                        }
-                        file_put_contents(__DIR__ . "/resultFiles/".$this->outputFileName, $resultArray);
-                    }
-                    else {
-                        throw new ExceptionOfCountElem("Число сортируемых элементов не должно превышать 100!");
-                    }
-                }
-                catch (ExceptionOfCountElem $exOfCountElem) {
-                    throw $exOfCountElem;
-                }
-            }
-            else {
-                throw new ExceptionOfFileNameExist("Файл с таким именем не существует!");
-            }
-        }
-        catch (ExceptionOfFileNameExist $exOfFileNameExist) {
-             throw $exOfFileNameExist;
-        }
-    }
-   
-    public function increaseInsertionIntSort($arrForSort) {
-        for($i = 1; $i < count($arrForSort); $i++) {
-            $currentValue = $arrForSort[$i];
-            $leftValue = $i - 1;
-            while($leftValue >= 0 && $arrForSort[$leftValue] > $currentValue) {
-                $arrForSort[$leftValue+1] = $arrForSort[$leftValue];
-                $leftValue--;
-            }
-            $arrForSort[++$leftValue] = $currentValue;
-        }
-        return $arrForSort;
-    }
-
-    public function decreaseInsertionIntSort($arrForSort) {
-        for($i = 1; $i < count($arrForSort); $i++)
-        {
-            $rightValue = $arrForSort[$i];
-            $leftValue = $i - 1;
-            while($leftValue >= 0 && $arrForSort[$leftValue] <= $rightValue)
-            {
-                $arrForSort[$leftValue+1] = $arrForSort[$leftValue];
-                $leftValue--;
-            }
-            $arrForSort[++$leftValue] = $rightValue;
-        }
-        return $arrForSort;
-    }
-
-    public function decreaseInsertionStrSort($arrForSort) {
-        for($i = 1; $i < count($arrForSort); $i++)
-        {
-            $rightValue = $arrForSort[$i];
-            $leftValue = $i - 1;
-            while($leftValue >= 0 && $arrForSort[$leftValue] <= $rightValue)
-            {
-                $arrForSort[$leftValue+1] = $arrForSort[$leftValue];
-                $leftValue--;
-            }
-            $arrForSort[++$leftValue] = $rightValue;
-        }
-        return $arrForSort;
-    }
-
-    public function increaseInsertionStrSort($arrForSort) {
-        for($i = 1; $i < count($arrForSort); $i++)
-        {
-            $rightValue = $arrForSort[$i];
-            $leftValue = $i - 1;
-            while($leftValue >= 0 && $arrForSort[$leftValue] > $rightValue)
-            {
-                $arrForSort[$leftValue+1] = $arrForSort[$leftValue];
-                $leftValue--;
-            }
-            $arrForSort[++$leftValue] = $rightValue;
         }
         return $arrForSort;
     }
@@ -190,11 +110,11 @@ class FileDataSortModel {
 
 class FileDataSortView {
     public $fileDataSortModel;
-    public function __construct ($inputFileName, $outputFileName, $dataType, $wayOfSort) {
-        $this->fileDataSortModel = new FileDataSortModel ($inputFileName, $outputFileName, $dataType, $wayOfSort);
+    public function __construct ($inputFileName, $outputFileName, $dataType, $wayOfSort) { //, $comparator
+        $this->fileDataSortModel = new FileDataSortModel ($inputFileName, $outputFileName, $dataType, $wayOfSort); 
     }
-    public function generateView() {
-        $result = $this->fileDataSortModel->ifAllDataInput();
+    public function generateView($argv, $argc) {
+        $result = $this->fileDataSortModel->ifAllDataInputAndTrue($argv, $argc);
         if (gettype($result) !== "array") {
             echo $result;
         }
@@ -203,14 +123,14 @@ class FileDataSortView {
 
 class FileDataSortController {
     public $fileDataSortView;
-    public function __construct ($inputFileName, $outputFileName, $dataType, $wayOfSort) {
-        $this->fileDataSortView = new FileDataSortView($inputFileName, $outputFileName, $dataType, $wayOfSort);
+    public function __construct ($inputFileName, $outputFileName, $dataType, $wayOfSort) { 
+        $this->fileDataSortView = new FileDataSortView($inputFileName, $outputFileName, $dataType, $wayOfSort); 
     }
-    public function fileDataSortAction() {
-        $this->fileDataSortView->generateView();
+    public function fileDataSortAction($argv, $argc) {
+        $this->fileDataSortView->generateView($argv, $argc);
     }
 
 }
 
-$objSort = new FileDataSortController($inputFileName, $outputFileName, $dataType, $wayOfSort);
-$objSort->fileDataSortAction();
+$objSort = new FileDataSortController($inputFileName, $outputFileName, $dataType, $wayOfSort); 
+$objSort->fileDataSortAction($argv, $argc);
