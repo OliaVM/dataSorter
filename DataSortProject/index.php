@@ -10,7 +10,6 @@ class FileDataSortModel {
     public $dataType;
     public $inputFileName;
     public $countElem = 0;
-    public $comparator;
 
     public function __construct($inputFileName, $outputFileName, $dataType, $wayOfSort){ //, $comparator
         $this->inputFileName = $inputFileName;
